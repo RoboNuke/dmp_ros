@@ -4,33 +4,26 @@ import numpy as np
 from dmp_ros.rbf import RBF
 from dmp_ros.cs import CS
 
-
 class DiscreteDMP():
-    def __init__(self, betaY=1, nRBF=100, alphaX=-1.0, dt = 0.001, data = None):
-        if data == None:
-            self.nRBF = nRBF
-            self.ay = 4 * betaY
-            self.by = betaY
-            self.ax = alphaX
-            self.dt = dt
-            self.w = [1.0 for x in range(self.nRBF)]
-            self.cs = CS(self.ax, self.dt)
+    def __init__(self, nRBF=100, betaY=1, dt= 0.001, cs=CS(1.0, 0.001), RBFData=None, ws=None):
+        self.nRBF = nRBF
+        self.ay = 4 * betaY
+        self.by = betaY
+        self.cs = cs
+        self.dt = dt
+
+        self.ws = ws
+        if self.ws == None:
+            self.ws = [1.0 for x in range(self.nRBF)]
+
+        if RBFData == None:
             self.centerRBFs()
         else:
-            self.by = data['by']
-            self.ay = 4 * self.by
-            self.nRBF = len(data['weights'])
-            self.w = data['weights']
             self.RBFs = []
             for i in range(self.nRBF):
-                c = data['centers'][i]
-                h = data['widths'][i]
+                c = RBFData['centers'][i]
+                h = RBFData['widths'][i]
                 self.RBFs.append(RBF(c,h))
-
-            self.dt = data['dt']
-            self.ax = data['ax']
-            self.cs = CS(self.ax, self.dt)
-
 
     def centerRBFs(self):
         self.RBFs = []
@@ -78,22 +71,22 @@ class DiscreteDMP():
 
         fd = ddy - self.ay * (self.by * (g - y) - dy)
         
-        for i in range(len(self.w)):
+        for i in range(len(self.ws)):
             bot = np.sum( x ** 2 * rbMats[i])
             #bot = np.sum(x * rbMats[i])
             top = np.sum( x * rbMats[i] * fd)
-            self.w[i] = top / bot
+            self.ws[i] = top / bot
         #print(g - y[0])
         if abs(g - y[0]) > 0.0001:
             for i in range(self.nRBF):
-                self.w[i]/= (g-y[0])
+                self.ws[i]/= (g-y[0])
 
     def calcF(self, x):
         top = 0
         bot = 0
-        for i in range(len(self.w)):
+        for i in range(len(self.ws)):
             thee = self.RBFs[i].eval(x)
-            top += thee * self.w[i] 
+            top += thee * self.ws[i] 
             bot += thee
         return top/bot
     
@@ -110,7 +103,7 @@ class DiscreteDMP():
         ts = [0.0]
         #print(f"Total Time:{self.cs.run_time * tau}")
         while x > self.cs.xPath[-1]:
-            xdot = -self.ax * x 
+            xdot = -self.cs.ax * x 
             x += xdot * self.dt / tau
             t+=self.dt
 
@@ -141,7 +134,7 @@ if __name__=="__main__":
     dt = 0.001
     tmax = 5
 
-    dmp = DiscreteDMP(25.0/4.0, 1000, 1.0, dt=dt)
+    dmp = DiscreteDMP(nRBF=1000, betaY=25.0/4.0, dt=dt, cs=CS(1.0, dt))
 
     t = np.arange(0, tmax, dt)
     of = 0.5
