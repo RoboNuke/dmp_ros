@@ -5,6 +5,7 @@ import tf2_py
 import rospy
 import sys
 from dmp_ros.discrete_dmp import DiscreteDMP
+from dmp_ros.cs import CS
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 class DMPUtils():
@@ -101,7 +102,7 @@ class DMPUtils():
         data['weights'] = ws
         data['centers'] = cs
         data['widths'] = hs
-        data['ax'] = dmp.ax
+        data['ax'] = dmp.cs.ax
         data['by'] = dmp.by
         data['dt'] = dmp.dt
 
@@ -111,8 +112,13 @@ class DMPUtils():
     def loadDMP(self, fp):
         with open(fp, 'r') as file:
             data = yaml.safe_load(file)
-
-        dmp = DiscreteDMP(0,0,0,0,data=data)
+        ax = data['ax']
+        by = data['by']
+        dt = data['dt']
+        ws = data['weights']
+        rbfData = {'centers':data['centers'], 'widths':data['widths']}
+        nRBF = len(ws)
+        dmp = DiscreteDMP(nRBF,by,dt,CS(ax,dt),rbfData,ws)
         return dmp
 
     def saveTraj(self, fp, traj):
