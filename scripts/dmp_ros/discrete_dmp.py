@@ -25,6 +25,12 @@ class DiscreteDMP():
                 h = RBFData['widths'][i]
                 self.RBFs.append(RBF(c,h))
 
+        self.ddy = 0
+        self.dy = 0
+        self.y = 0
+        self.goal = None
+        self.y0 = None
+
     def centerRBFs(self):
         self.RBFs = []
         #des_c = np.linspace(min(self.cs.xPath), max(self.cs.xPath), self.nRBF)
@@ -46,7 +52,7 @@ class DiscreteDMP():
         import scipy.interpolate
         path_gen = scipy.interpolate.interp1d(t, y)
         for i in range(len(x)):
-            path[i] = path_gen(i * self.dt)
+            path[i] = path_gen(i * self.cs.dt)
             ts[i] = i * self.dt
 
         
@@ -81,40 +87,63 @@ class DiscreteDMP():
             for i in range(self.nRBF):
                 self.ws[i]/= (g-y[0])
 
-    def calcF(self, x):
+    def calcWPsi(self, x):
         top = 0
         bot = 0
         for i in range(len(self.ws)):
             thee = self.RBFs[i].eval(x)
             top += thee * self.ws[i] 
             bot += thee
-        return top/bot
+        if bot > 1e-6:
+            return top/bot
+        else:
+            return top
     
+    def step(self, tau=1.0, error=0.0, external_force=None):
+        ec = 1.0 / (1.0+error)
+
+        x = self.cs.step(tau=tau, error_coupling = ec)
+
+        F = self.calcWPsi(x) * (self.goal - self.y0) * x
+
+        self.ddy = self.ay * (self.by * (self.goal - self.y) - self.dy) + F
+
+        if external_force != None:
+            ddy += external_force
+        
+        self.dy += self.ddy * self.dt * ec / tau
+        self.y += self.dy * self.dt * ec / tau
+
+        return self.y, self.dy, self.ddy
+
+    def reset(self, goal, y, dy = 0.0, ddy = 0.0):
+        self.y = y
+        self.dy = dy
+        self.ddy = ddy
+        self.y0 = self.y
+        self.goal = goal
+        self.cs.reset()
+
     def rollout(self, g, y0, dy0=0, ddy0=0, tau=1, scale=1):
-        y = y0
-        ydot = dy0
-        ydotdot = ddy0
+        self.reset(g, y0, dy0, ddy0)
         t = 0.0
-        x = 1.0
         z = [y0]
-        dz = [ydot]
-        ddz = [ydotdot]
+        dz = [dy0]
+        ddz = [ddy0]
         #print(self.dt)
         ts = [0.0]
         #print(f"Total Time:{self.cs.run_time * tau}")
-        while x > self.cs.xPath[-1]:
-            xdot = -self.cs.ax * x 
-            x += xdot * self.dt / tau
-            t+=self.dt
+        timesteps = int(self.cs.timesteps * tau)
+        for it in range(timesteps):
+            t = it * self.dt
 
-            ydotdot = self.ay * (self.by * (g -  y) - ydot) +  x*(g-y0)*self.calcF(x)
-            ydot += ydotdot * self.dt / tau
-            y += ydot * self.dt / tau
+            self.step(tau=tau, error=0.0, external_force=None)
 
-            z.append(y)
-            dz.append(ydot)
-            ddz.append(ydotdot)
+            z.append(self.y)
+            dz.append(self.dy)
+            ddz.append(self.ddy)
             ts.append(t)
+
         z = np.array(z)
         dz = np.array(dz)/tau
         #dz[0]*=tau
@@ -144,9 +173,10 @@ if __name__=="__main__":
 
     dmp.learnWeights(y) #,dy,ddy,t)
 
-    tau = 1
+    tau = 10
     scale = 1
     g = y[-1] * scale
+
 
     ts, z, dz, ddz = dmp.rollout(g, y[0], dy[0]*tmax, ddy[0]*tmax**2, tau, scale)
     
@@ -155,6 +185,8 @@ if __name__=="__main__":
     fig.set_figheight(1000/96)
     fig.tight_layout(pad=5.0)
 
+    print(t[-1], len(ts) * dt)
+    print(len(t), len(ts))
     plotSub(axs[0], t*tau/tmax, ts, y, z,"Position DMP", "Position")
     plotSub(axs[1], t*tau/tmax, ts, dy*(tmax/tau), dz, "Velocity DMP", "Velocity")
     plotSub(axs[2], t*tau/tmax, ts, ddy*( (tmax/tau)**2), ddz, "Accel DMP", "Acceleration")
