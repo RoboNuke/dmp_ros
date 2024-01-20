@@ -1,0 +1,23 @@
+<launch>
+    <arg name="peg_shape"
+        default="circle"
+        doc="Select a peg shape from the following: (circle)"
+    />
+    <arg name="peg_size"
+        default="30"
+        doc="The peg size in mm"
+    />
+    <include file="$(find bravo_arm_sw)/launch/bravo_arm.launch">
+        <arg  name="use_ps4_controller" value="false"/>
+        <arg  name="with_trisect" value="false"/>
+        <arg  name="start_rviz" value="true"/>
+        <arg  name="with_base_hand" value="false"/>
+        <arg  name="with_rigid_peg" value="true"/>
+        <arg  name="with_moveit_servo" value="true"/>
+        <arg  name="peg_size" value="$(arg peg_size)"/>
+        <arg  name="peg_shape" value="$(arg peg_shape)"/>
+    </include>
+
+    <node name="dmp_playback" pkg="dmp_ros" type="DMP6DoF.py" output="screen" launch-prefix="bash -c 'sleep 5.0; $0 $@'"/>
+
+</launch>
