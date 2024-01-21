@@ -166,6 +166,7 @@ include_directories(
 
 catkin_install_python(PROGRAMS 
   scripts/DMP6DoF.py
+  scripts/dmp_playback.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 ## Mark executables for installation

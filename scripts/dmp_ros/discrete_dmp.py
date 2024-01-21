@@ -43,7 +43,7 @@ class DiscreteDMP():
             self.RBFs.append(RBF(c,h))
 
     def learnWeights(self,y): #, ydot, ydotdot, tt):
-        g = y[-1]
+        self.goal = y[-1]
         x = np.array(self.cs.rollout())
         #dt = t / t[-1]
         path = np.zeros(len(x))
@@ -75,7 +75,7 @@ class DiscreteDMP():
         y = path
         rbMats = [self.RBFs[i].theeMat(x) for i in range(self.nRBF)]
 
-        fd = ddy - self.ay * (self.by * (g - y) - dy)
+        fd = ddy - self.ay * (self.by * (self.goal - y) - dy)
         
         for i in range(len(self.ws)):
             bot = np.sum( x ** 2 * rbMats[i])
@@ -85,7 +85,7 @@ class DiscreteDMP():
         #print(g - y[0])
         if abs(g - y[0]) > 0.0001:
             for i in range(self.nRBF):
-                self.ws[i]/= (g-y[0])
+                self.ws[i]/= (self.goal-y[0])
 
     def calcWPsi(self, x):
         top = 0
