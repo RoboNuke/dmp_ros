@@ -83,7 +83,7 @@ class DiscreteDMP():
             top = np.sum( x * rbMats[i] * fd)
             self.ws[i] = top / bot
         #print(g - y[0])
-        if abs(g - y[0]) > 0.0001:
+        if abs(self.goal - y[0]) > 0.0001:
             for i in range(self.nRBF):
                 self.ws[i]/= (self.goal-y[0])
 
@@ -185,8 +185,6 @@ if __name__=="__main__":
     fig.set_figheight(1000/96)
     fig.tight_layout(pad=5.0)
 
-    print(t[-1], len(ts) * dt)
-    print(len(t), len(ts))
     plotSub(axs[0], t*tau/tmax, ts, y, z,"Position DMP", "Position")
     plotSub(axs[1], t*tau/tmax, ts, dy*(tmax/tau), dz, "Velocity DMP", "Velocity")
     plotSub(axs[2], t*tau/tmax, ts, ddy*( (tmax/tau)**2), ddz, "Accel DMP", "Acceleration")

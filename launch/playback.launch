@@ -12,12 +12,13 @@
         <arg  name="with_trisect" value="false"/>
         <arg  name="start_rviz" value="true"/>
         <arg  name="with_base_hand" value="false"/>
-        <arg  name="with_rigid_peg" value="true"/>
+        <arg  name="with_rigid_peg" value="false"/>
         <arg  name="with_moveit_servo" value="true"/>
         <arg  name="peg_size" value="$(arg peg_size)"/>
         <arg  name="peg_shape" value="$(arg peg_shape)"/>
     </include>
 
-    <node name="dmp_playback" pkg="dmp_ros" type="DMP6DoF.py" output="screen" launch-prefix="bash -c 'sleep 5.0; $0 $@'"/>
-
+    <!--node name="dmp_playback" pkg="dmp_ros" type="DMP6DoF.py" output="screen" launch-prefix="bash -c 'sleep 5.0; $0 $@'"/-->
+    <!--node name="dmp_playback" pkg="dmp_ros" type="dmp_playback.py" launch-prefix="xterm -hold -e"/-->
+    <node name="ee_state_publisher" pkg="dmp_ros" type="ee_state_publisher.py" output="screen"/>
 </launch>
