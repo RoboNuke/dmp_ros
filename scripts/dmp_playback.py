@@ -33,10 +33,7 @@ class DMPPlayback:
         self.Kds = [0 for i in range(6)]
         #self.Kds = self.Kps
         self.playing = False
-        self.tuning = False
-        self.tuneIdx = 5
         self.poseGoals = [0.0 for i in range(6)]
-        self.poseGoals[self.tuneIdx] = -2.15
         self.velGoals = [0.0 for i in range(6)]
     
         self.tfBuffer = tf2_ros.Buffer()
@@ -54,29 +51,17 @@ class DMPPlayback:
 
         if(self.playing):
             now = rospy.Time.now()
-            if not self.tuning:
 
-                if (now - self.lastTime).to_sec() > self.dt:
-                    for i in range(6):
-                        y, dy, ddy = self.dmps[i].step(self.totalTime)
-                        self.poseGoals[i] = y
-                        self.velGoals[i] = dy
-            else:
-                if (now - self.startTime).to_sec() > 5.0:
-                    self.playing = False
-                    print(len(self.ts))
-                    plt.plot(self.ts, self.locs)
-                    plt.plot(self.ts, self.goals)
-                    #plt.legend("Plant", "Goal")
-                    plt.show()
+            if (now - self.lastTime).to_sec() > self.dt:
+                for i in range(6):
+                    y, dy, ddy = self.dmps[i].step(self.totalTime)
+                    self.poseGoals[i] = y
+                    self.velGoals[i] = dy
+
 
 
             us, errs, dErrs = self.pubDesiredTwist()
             out = ""
-            #out += f"{self.poseGoals[self.tuneIdx]:1.3f}, {self.pose[self.tuneIdx]:1.3f}, {errs[self.tuneIdx]:1.3f}"
-            #self.ts.append((now - self.startTime).to_sec())
-            #self.goals.append(self.poseGoals[self.tuneIdx])
-            #self.locs.append(self.pose[self.tuneIdx])
             
             for i, err in enumerate(errs):
                 if i < 3:
@@ -84,7 +69,7 @@ class DMPPlayback:
                 else:
                     out +=f"{err*180/pi:1.3f}\t"
             
-            print(out)
+            #print(out)
 
     def loadDMPFromTraj(self):
         # load data
@@ -178,13 +163,7 @@ class DMPPlayback:
 
             return True, "Starting Trajectory Playback"
         else:
-            self.lastTime = rospy.Time.now()
-            self.startTime = self.lastTime
-            self.ts = []
-            self.goals = []
-            self.locs = []
-            self.playing = True
-            self.tuning = True
+            self.playing = False
             return False, "Stopping Trajectory Playback"
 
 

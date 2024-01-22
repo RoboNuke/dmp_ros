@@ -18,7 +18,6 @@
         <arg  name="peg_shape" value="$(arg peg_shape)"/>
     </include>
 
-    <!--node name="dmp_playback" pkg="dmp_ros" type="DMP6DoF.py" output="screen" launch-prefix="bash -c 'sleep 5.0; $0 $@'"/-->
-    <!--node name="dmp_playback" pkg="dmp_ros" type="dmp_playback.py" launch-prefix="xterm -hold -e"/-->
+    <node name="dmp_playback" pkg="dmp_ros" type="dmp_playback.py" launch-prefix="xterm -hold -e"/>
     <node name="ee_state_publisher" pkg="dmp_ros" type="ee_state_publisher.py" output="screen"/>
 </launch>
