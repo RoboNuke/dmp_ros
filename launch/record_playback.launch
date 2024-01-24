@@ -1,0 +1,28 @@
+<!-- A top-level launch file to start the RobotHW interface, MoveIt, MoveIt Servo, and RViz -->
+
+<launch>
+
+    <arg name="peg_shape"
+        default="circle"
+        doc="Select a peg shape from the following: (circle)"
+    />
+    <arg name="peg_size"
+        default="30"
+        doc="The peg size in mm"
+    />
+    <include file="$(find bravo_arm_sw)/launch/bravo_arm.launch">
+        <arg  name="use_ps4_controller" value="false"/>
+        <arg  name="with_trisect" value="false"/>
+        <arg  name="start_rviz" value="true"/>
+        <arg  name="with_base_hand" value="false"/>
+        <arg  name="with_rigid_peg" value="false"/>
+        <arg  name="with_moveit_servo" value="true"/>
+        <arg  name="peg_size" value="$(arg peg_size)"/>
+        <arg  name="peg_shape" value="$(arg peg_shape)"/>
+    </include>
+    <!--node name="gravity_comp_node" pkg="dmp_ros" type="gravity_comp.py" 
+            launch-prefix="xterm -hold -e"/-->
+    
+    <node name="joint_playback_server" pkg="dmp_ros" type="joint_playback.py"
+            launch-prefix="xterm -hold -e"/> 
+  </launch>

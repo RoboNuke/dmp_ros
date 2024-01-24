@@ -1,0 +1,6 @@
+bool start
+string bagFilePath
+float32 timeScaling
+---
+bool success
+string message
