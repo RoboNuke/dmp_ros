@@ -17,7 +17,7 @@ class DiscreteDMP():
             self.ws = [1.0 for x in range(self.nRBF)]
 
         if RBFData == None:
-            self.centerRBFs()
+            self.centerRBFsV2()
         else:
             self.RBFs = []
             for i in range(self.nRBF):
@@ -40,7 +40,20 @@ class DiscreteDMP():
             #c = des_c[i]
             #h = (self.nRBF) / (c ** 2)
             h = self.nRBF ** 1.5 / c / self.cs.ax
+            
+            #c = np.exp(-self.cs.ax * (i - 1)/(self.nRBF - 1))
             self.RBFs.append(RBF(c,h))
+
+    def centerRBFsV2(self):
+        self.RBFs = []
+        c = [np.exp(-self.cs.ax * i/self.nRBF) for i in range(self.nRBF)]
+        h = [1 / ((c[i+1] - c[i])**2) for i in range(self.nRBF-1)]
+        h.append(h[-1])
+        #print(c)
+        #print(h)
+        for i in range(self.nRBF):
+            self.RBFs.append(RBF(c[i],h[i]))
+
 
     def learnWeights(self,y): #, ydot, ydotdot, tt):
         self.goal = y[-1]
@@ -81,6 +94,7 @@ class DiscreteDMP():
             bot = np.sum( x ** 2 * rbMats[i])
             #bot = np.sum(x * rbMats[i])
             top = np.sum( x * rbMats[i] * fd)
+            #print(bot)
             self.ws[i] = top / bot
         #print(g - y[0])
         if abs(self.goal - y[0]) > 0.0001:
@@ -163,7 +177,7 @@ if __name__=="__main__":
     dt = 0.001
     tmax = 5
 
-    dmp = DiscreteDMP(nRBF=1000, betaY=25.0/4.0, dt=dt, cs=CS(1.0, dt))
+    dmp = DiscreteDMP(nRBF=75, betaY=25.0/4.0, dt=dt, cs=CS(1.0, dt))
 
     t = np.arange(0, tmax, dt)
     of = 0.5
@@ -176,7 +190,6 @@ if __name__=="__main__":
     tau = 10
     scale = 1
     g = y[-1] * scale
-
 
     ts, z, dz, ddz = dmp.rollout(g, y[0], dy[0]*tmax, ddy[0]*tmax**2, tau, scale)
     

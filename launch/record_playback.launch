@@ -15,7 +15,7 @@
         <arg  name="with_trisect" value="false"/>
         <arg  name="start_rviz" value="true"/>
         <arg  name="with_base_hand" value="false"/>
-        <arg  name="with_rigid_peg" value="false"/>
+        <arg  name="with_rigid_peg" value="true"/>
         <arg  name="with_moveit_servo" value="true"/>
         <arg  name="peg_size" value="$(arg peg_size)"/>
         <arg  name="peg_shape" value="$(arg peg_shape)"/>
