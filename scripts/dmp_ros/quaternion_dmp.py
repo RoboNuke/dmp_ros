@@ -15,9 +15,28 @@ class QuaternionDMP():
     def learnWeights(self, q):
         pass
     
-    def step(self, tau=1.0, error=0.0, external_force=None):
-        pass
+    def calcWPsi(self, x):
+        top = 0
+        bot = 0
+        for i in range(len(self.ws)):
+            thee = self.RBFs[i].eval(x)
+            top += thee * self.ws[i]
+            bot += thee
+        if bot > 1e-6:
+            return top/bot * (self.goal * self.q.conj()) * x
+        else:
+            return top * (self.goal*self.q.conj())*x
 
+    def step(self, tau=1.0, error=0.0, external_force=None):
+        ec = 1.0 / (1.0 + error)
+
+        x = self.cs.step(tau=tau, error_coupling=ec)
+
+        F  = self.calcWPsi(x) 
+        self.dn = self.az * (self.bz * 2 * np.log(self.goal * self.q.conj()) - self.n) + F
+        self.dn /= tau
+
+        
     def reset(self, goal, q, w = [0.0]*3, dw = [0.0]*3):
         pass
 
