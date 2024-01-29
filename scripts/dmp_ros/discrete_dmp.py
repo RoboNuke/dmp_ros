@@ -55,45 +55,34 @@ class DiscreteDMP():
             self.RBFs.append(RBF(c[i],h[i]))
 
 
-    def learnWeights(self,y): #, ydot, ydotdot, tt):
+    def learnWeights(self,ts,y): #, ydot, ydotdot, tt):
         self.goal = y[-1]
         x = np.array(self.cs.rollout())
         #dt = t / t[-1]
         path = np.zeros(len(x))
-        ts = np.zeros(len(x))
+        self.dt = ts[-1]/len(x) # total time over number of timesteps
+        print(self.dt, len(x), len(x) * self.dt)
         t=np.linspace(0, self.cs.run_time, len(y))
         import scipy.interpolate
         path_gen = scipy.interpolate.interp1d(t, y)
         for i in range(len(x)):
             path[i] = path_gen(i * self.cs.dt)
-            ts[i] = i * self.dt
+            #ts[i] = i * self.dt
 
         
         # estimate the gradients
         #ddt = self.dt * t[-1]
         dy = np.gradient(path)/(self.dt)
         ddy = np.gradient(dy)/(self.dt)
-        """
-        print(min(tt), max(tt), min(ts), max(ts))
-        plt.plot(ts, path, '-r')
-        plt.plot(tt/tt[-1], y)
-        plt.show()
-        plt.plot(ts ,dy, '-r')
-        plt.plot(tt/tt[-1], ydot)
-        plt.show()
-        plt.plot(ts,ddy, '-r')
-        plt.plot(tt/tt[-1], ydotdot)
-        plt.show()
-        """
         y = path
         rbMats = [self.RBFs[i].theeMat(x) for i in range(self.nRBF)]
 
         fd = ddy - self.ay * (self.by * (self.goal - y) - dy)
         
         for i in range(len(self.ws)):
-            bot = np.sum( x ** 2 * rbMats[i])
-            #bot = np.sum(x * rbMats[i])
-            top = np.sum( x * rbMats[i] * fd)
+            #bot = np.sum( x **2  * rbMats[i])
+            bot = np.sum(x * rbMats[i])
+            top = np.sum( x* rbMats[i] * fd)
             #print(bot)
             self.ws[i] = top / bot
         #print(g - y[0])
@@ -118,15 +107,15 @@ class DiscreteDMP():
 
         x = self.cs.step(tau=tau, error_coupling = ec)
 
-        F = self.calcWPsi(x) * (self.goal - self.y0) * x
+        F = self.calcWPsi(x) * (self.goal - self.y0) #* x
 
-        self.ddy = self.ay * (self.by * (self.goal - self.y) - self.dy) + F
+        self.ddy = (self.ay * (self.by * (self.goal - self.y) - tau*self.dy) + F)/(tau**2)
 
         if external_force != None:
-            ddy += external_force
+            self.ddy += external_force
         
-        self.dy += self.ddy * self.dt * ec / tau
-        self.y += self.dy * self.dt * ec / tau
+        self.dy += self.ddy * self.dt #* ec * tau
+        self.y += self.dy * self.dt #* ec * tau
 
         return self.y, self.dy, self.ddy
 
@@ -147,9 +136,9 @@ class DiscreteDMP():
         #print(self.dt)
         ts = [0.0]
         #print(f"Total Time:{self.cs.run_time * tau}")
-        timesteps = int(self.cs.timesteps * tau)
+        timesteps = int(self.cs.timesteps*tau)
         for it in range(timesteps):
-            t = it * self.dt
+            t = it * self.dt 
 
             self.step(tau=tau, error=0.0, external_force=None)
 
@@ -159,10 +148,8 @@ class DiscreteDMP():
             ts.append(t)
 
         z = np.array(z)
-        dz = np.array(dz)/tau
-        #dz[0]*=tau
-        ddz = np.array(ddz)/(tau**2)
-        #ddz[0]*=tau**2
+        dz = np.array(dz)
+        ddz = np.array(ddz)
         return(ts, z, dz, ddz)
 
 
@@ -185,22 +172,23 @@ if __name__=="__main__":
     dy = of * 10*np.cos(of* 10*t) - of*3*np.sin(of*3*t)
     ddy = -100* of**2 * np.sin(of*10*t) - 9 * of**2 * np.cos(of*3*t)
 
-    dmp.learnWeights(y) #,dy,ddy,t)
+    dmp.learnWeights(t,y) #,dy,ddy,t)
 
-    tau = 10
+    tau = 2.0
     scale = 1
     g = y[-1] * scale
 
-    ts, z, dz, ddz = dmp.rollout(g, y[0], dy[0]*tmax, ddy[0]*tmax**2, tau, scale)
+    ts, z, dz, ddz = dmp.rollout(g, y[0], dy[0]/tau, ddy[0]/(tau**2), tau, scale)
     
     fig, axs = plt.subplots(3)
     fig.set_figwidth(800/96)
     fig.set_figheight(1000/96)
     fig.tight_layout(pad=5.0)
 
-    plotSub(axs[0], t*tau/tmax, ts, y, z,"Position DMP", "Position")
-    plotSub(axs[1], t*tau/tmax, ts, dy*(tmax/tau), dz, "Velocity DMP", "Velocity")
-    plotSub(axs[2], t*tau/tmax, ts, ddy*( (tmax/tau)**2), ddz, "Accel DMP", "Acceleration")
+    plotSub(axs[0], t*tau, ts, y, z,"Position DMP", "Position")
+    plotSub(axs[1], t*tau, ts, dy/tau, dz, "Velocity DMP", "Velocity")
+    plotSub(axs[2], t*tau, ts, ddy/(tau**2), ddz, "Accel DMP", "Acceleration")
+    
     plt.xlabel("time (s)")
 
     plt.legend(['Original Function', 'Learned Trajectory'])

@@ -14,7 +14,7 @@ class CS():
         self.x = self.run_time
 
     def step(self, tau=1.0, error_coupling=1.0):
-        self.x += (-self.ax * self.x * error_coupling) * self.dt / tau
+        self.x += -self.ax * self.x * error_coupling * self.dt / tau
         return self.x
 
     def rollout(self,tau=1.0):
